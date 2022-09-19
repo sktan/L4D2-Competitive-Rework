@@ -4,7 +4,7 @@
 #include <sourcemod>
 #include <dhooks>
 
-#define PLUGIN_VERSION "1.1"
+#define PLUGIN_VERSION "1.3"
 
 public Plugin myinfo = 
 {
@@ -71,9 +71,33 @@ MRESReturn DTR_OnSetGroundEntity(int entity, DHookParam hParams)
 	if (ground <= 0 || ground > MaxClients)
 		return MRES_Ignored;
 	
-	if (GetClientTeam(ground) == team) // do we need this?
+	// if (GetClientTeam(ground) == team) // do we need this?
+	//	return MRES_Ignored;
+	
+	if (IsPouncing(GetEntPropEnt(entity, Prop_Send, "m_customAbility")))
 		return MRES_Ignored;
 	
 	SetEntPropEnt(entity, Prop_Send, "m_hGroundEntity", 0);
 	return MRES_Supercede;
+}
+
+bool IsPouncing(int ability)
+{
+	if (!IsValidEdict(ability))
+		return false;
+	
+	static char cls[64];
+	if (!GetEdictClassname(ability, cls, sizeof(cls)))
+		return false;
+	
+	if (cls[8] != 'l') // match "leap" "lunge"
+		return false;
+	
+	if (cls[9] == 'e')
+		return GetEntPropFloat(ability, Prop_Send, "m_nextActivationTimer", 1) <= GetGameTime();
+	
+	if (cls[9] == 'u')
+		return !!GetEntProp(ability, Prop_Send, "m_isLunging", 1);
+	
+	return false;
 }
